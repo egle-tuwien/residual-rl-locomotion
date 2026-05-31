@@ -1,0 +1,48 @@
+name: Deploy GitHub Pages site
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Stage media assets
+        run: |
+          cp RAL2025.mp4 site/RAL2025.mp4
+          cp A0_Robust_Torque_Locomotion_Poster.pdf site/A0_Robust_Torque_Locomotion_Poster.pdf
+          pdftoppm -png -singlefile -f 1 -r 180 site/A0_Robust_Torque_Locomotion_Poster.pdf site/poster-preview
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
